@@ -1,34 +1,36 @@
+version: '3.8'  # Specify the Docker Compose version
+
 services:
   ollama:
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}  # Use default tag 'latest' if not specified
+    container_name: ollama
     volumes:
       - ollama:/root/.ollama
-    container_name: ollama
     pull_policy: always
     tty: true
     restart: unless-stopped
-    image: ollama/ollama:${OLLAMA_DOCKER_TAG-latest}
 
   open-webui:
-    build:
-      context: .
-      args:
-        OLLAMA_BASE_URL: '/ollama'
-      dockerfile: Dockerfile
-    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-main}  # Use default tag 'main' if not specified
     container_name: open-webui
+    build:
+      context: .  # Current directory as build context
+      dockerfile: Dockerfile  # Specify Dockerfile if not named 'Dockerfile'
+      args:
+        OLLAMA_BASE_URL: '/ollama'  # Build-time variable
     volumes:
       - open-webui:/app/backend/data
     depends_on:
-      - ollama
+      - ollama  # Ensure 'ollama' service starts before 'open-webui'
     ports:
-      - ${OPEN_WEBUI_PORT-3000}:8089
-    environment:
-      - OLLAMA_BASE_URL: "http://159.69.56.51:11434"
-      - WEBUI_SECRET_KEY: "nothing"
+      - "${OPEN_WEBUI_PORT:-3000}:8080"  # Map host port to container port with default 3000
+    environment:  # Use key-value pairs for environment variables
+      OLLAMA_BASE_URL: "http://159.69.56.51:11434"  # Replace with your actual URL if different
+      WEBUI_SECRET_KEY: ""  # Ensure this is set to a secure value in production
     extra_hosts:
-      - host.docker.internal:host-gateway
-    restart: unless-stopped
+      - "host.docker.internal:host-gateway"  # Facilitate host-container networking
+    restart: unless-stopped  # Automatically restart containers unless stopped manually
 
 volumes:
-  ollama: {}
-  open-webui: {}
+  ollama: {}  # Define named volume for ollama
+  open-webui: {}  # Define named volume for open-webui
